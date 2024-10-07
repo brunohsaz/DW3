@@ -1,0 +1,59 @@
+### Necessário para pegar o token
+### Post
+# @name loginAutenticado
+POST http://localhost:40000/Login HTTP/1.1
+content-type: application/json
+
+{    
+    "username": "qwe",
+    "password": "qwe"
+}
+### Seta o token
+@accessToken = {{loginAutenticado.response.body.$.token}}
+@username = {{loginAutenticado.response.body.$.username}}
+
+### Teste de inserção de escola
+POST http://localhost:40000/insertEscola HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "codigo": "ESC002",
+    "nome": "Escola Estadual Novo Horizonte",
+    "dataabertura": "2005-08-10"
+}
+
+### Teste de busca de todas as escolas
+GET http://localhost:40000/getAllEscolas HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{accessToken}}
+
+### Teste de busca de escola por ID
+POST http://localhost:40000/getEscolaByID HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "escolaid": 1
+}
+
+### Teste de atualização de escola
+POST http://localhost:40000/updateEscola HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "escolaid": 1,
+    "codigo": "ESC003",
+    "nome": "Escola Estadual Horizonte Alterado",
+    "dataabertura": "2005-08-10"
+}
+
+### Teste de exclusão de escola
+POST http://localhost:40000/deleteEscola HTTP/1.1
+content-type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+    "escolaid": 1
+}
