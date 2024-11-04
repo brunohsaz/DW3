@@ -1,21 +1,27 @@
-var express = require("express");
+var express = require('express');
 var router = express.Router();
-var cursosApp = require("../apps/cursos/controller/ctlCursos");
+var cursosApp = require("../apps/cursos/controller/ctlCursos")
 
+// Função necessária para evitar que usuários não autenticados acessem o sistema.
 function authenticationMiddleware(req, res, next) {
-  if (!req.session.isLogged) {
-    return res.redirect("/Login");
-  }
-  next();
-}
+    // Verificar se existe uma sessão válida.
+    isLogged = req.session.isLogged;    
 
-router.get("/ManutCursos", authenticationMiddleware, cursosApp.ManutCursos);
-router.get("/InsertCursos", authenticationMiddleware, cursosApp.insertCursos);
-router.get("/ViewCursos/:id", authenticationMiddleware, cursosApp.viewCurso);
-router.get("/UpdateCursos/:id", authenticationMiddleware, cursosApp.updateCurso);
+    if (!isLogged) {      
+      res.redirect("/Login");
+    }
+    next();
+};
 
-router.post("/InsertCursos", authenticationMiddleware, cursosApp.insertCursos);
-router.post("/UpdateCursos", authenticationMiddleware, cursosApp.updateCurso);
-router.post("/DeleteCursos", authenticationMiddleware, cursosApp.deleteCurso);
+/* GET métodos */
+router.get('/ManutCursos', authenticationMiddleware, cursosApp.manutCursos);
+router.get('/InsertCursos', authenticationMiddleware, cursosApp.insertCursos);
+router.get('/ViewCursos/:id', authenticationMiddleware, cursosApp.ViewCursos);
+router.get('/UpdateCursos/:id', authenticationMiddleware, cursosApp.UpdateCurso);
+
+/* POST métodos */
+router.post('/InsertCursos', authenticationMiddleware, cursosApp.insertCursos);
+router.post('/UpdateCursos', authenticationMiddleware, cursosApp.UpdateCurso);
+router.post('/DeleteCursos', authenticationMiddleware, cursosApp.DeleteCurso);
 
 module.exports = router;

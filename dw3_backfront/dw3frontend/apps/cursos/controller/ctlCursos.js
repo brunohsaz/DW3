@@ -1,79 +1,210 @@
 const axios = require("axios");
-// const validate = require("../validate/vldCourse"); // Caso você tenha uma validação específica
 
-const ManutCursos = async (req, res) => {
-  if (req.method === "POST") {
-    const formData = req.body;
+const manutCursos = async (req, res) => {
+  const userName = req.session.userName;
+  const token = req.session.token;
+  
+  try {
+    const resp = await axios.get(process.env.SERVIDOR_DW3Back + "/getAllCursos", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}` // Set JWT token in the header
+      }
+    });
 
-    // Validação (se necessário)
-    if (!validate.Validar(formData)) {
-      return res.status(400).json({ status: "error", msg: "Dados inválidos" });
+    res.render("cursos/view/vwManutCursos.njk", {
+      title: "Manutenção de cursos",
+      data: resp.data.registro,
+      erro: null,
+      userName: userName,
+    });
+  } catch (error) {
+    let remoteMSG;
+    if (error.code === "ECONNREFUSED") {
+      remoteMSG = "Servidor indisponível";
+    } else if (error.code === "ERR_BAD_REQUEST") {
+      remoteMSG = "Usuário não autenticado";
+    } else {
+      remoteMSG = error;
     }
 
+    res.render("cursos/view/vwManutCursos.njk", {
+      title: "Manutenção de cursos",
+      data: null,
+      erro: remoteMSG,
+      userName: userName,
+    });
+  }
+};
+
+const insertCursos = async (req, res) => {
+  if (req.method === "GET") {
+    const userName = req.session.userName;
+    res.render("cursos/view/vwFCrCursos.njk", {
+      title: "Cadastro de cursos",
+      data: null,
+      erro: null,
+      userName: userName,
+    });
+  } else {
+    const regData = req.body;
+    const token = req.session.token;
+
     try {
-      const resp = await axios.post(`${process.env.SERVIDOR_SIADBack}/courses`, formData, {
+      const response = await axios.post(process.env.SERVIDOR_DW3Back + "/InsertCursos", regData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        timeout: 5000, // 5 segundos de timeout
+      });
+
+      res.json({
+        status: response.data.status,
+        msg: response.data.msg,
+        data: response.data,
+        erro: null,
+      });
+    } catch (error) {
+      console.error('Erro ao inserir dados no servidor backend:', error.message);
+      res.json({
+        status: "Error",
+        msg: error.message,
+        data: null,
+        erro: null,
+      });
+    }
+  }
+};
+
+const ViewCursos = async (req, res) => {
+  const userName = req.session.userName;
+  const token = req.session.token;
+
+  try {
+    if (req.method === "GET") {
+      const id = req.params.id;
+
+      const response = await axios.post(process.env.SERVIDOR_DW3Back + "/GetCursoByID", {
+        cursoid: id,
+      }, {
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      return res.json({ status: "ok", msg: "Curso adicionado com sucesso!" });
-    } catch (error) {
-      return res.status(400).json({ status: "error", msg: error.response.data.msg });
+      if (response.data.status === "ok") {
+        res.render("cursos/view/vwFRUDrCursos.njk", {
+          title: "Visualização de cursos",
+          data: response.data.registro[0],
+          userName: userName,
+        });
+      } else {
+        console.log("[ctlCursos|ViewCursos] ID de curso não localizado!");
+      }
     }
-  } else {
-    const parametros = { title: "SIAD - Manutenção de cursos" };
-    res.render("30100admin/30120courses/view/vwCursos.njk", { parametros });
+  } catch (erro) {
+    res.json({ status: "[ctlCursos.js|ViewCursos] Curso não localizado!" });
+    console.log("[ctlCursos.js|ViewCursos] Erro não identificado", erro);
   }
 };
 
-const insertCursos = (req, res) => {
-  const parametros = { title: "SIAD - Inserir Curso" };
-  res.render("30100admin/30120courses/view/vwInsertCurso.njk", { parametros });
-};
+const UpdateCurso = async (req, res) => {
+  const userName = req.session.userName;
+  const token = req.session.token;
 
-const viewCurso = async (req, res) => {
-  const { id } = req.params;
   try {
-    const response = await axios.get(`${process.env.SERVIDOR_SIADBack}/courses/${id}`);
-    const curso = response.data;
-    const parametros = { title: "SIAD - Visualizar Curso", curso };
-    res.render("30100admin/30120courses/view/vwViewCurso.njk", { parametros });
-  } catch (error) {
-    res.status(400).json({ status: "error", msg: "Erro ao visualizar curso" });
+    if (req.method === "GET") {
+      const id = req.params.id;
+
+      const response = await axios.post(process.env.SERVIDOR_DW3Back + "/GetCursoByID", {
+        cursoid: id,
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.status === "ok") {
+        res.render("cursos/view/vwFRUDrCursos.njk", {
+          title: "Atualização de dados de cursos",
+          data: response.data.registro[0],
+          disabled: false,
+          userName: userName,
+        });
+      } else {
+        console.log("[ctlCursos|UpdateCurso] Dados não localizados");
+      }
+    } else {
+      const regData = req.body;
+
+      try {
+        const response = await axios.post(process.env.SERVIDOR_DW3Back + "/UpdateCursos", regData, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          timeout: 5000, // 5 segundos de timeout
+        });
+
+        res.json({
+          status: response.data.status,
+          msg: response.data.msg,
+          data: response.data,
+          erro: null,
+        });
+      } catch (error) {
+        console.error('[ctlCursos.js|UpdateCurso] Erro ao atualizar dados de cursos no servidor backend:', error.message);
+        res.json({
+          status: "Error",
+          msg: error.message,
+          data: null,
+          erro: null,
+        });
+      }
+    }
+  } catch (erro) {
+    res.json({ status: "[ctlCursos.js|UpdateCurso] Curso não localizado!" });
+    console.log("[ctlCursos.js|UpdateCurso] Erro não identificado", erro);
   }
 };
 
-const updateCurso = async (req, res) => {
-  const { id } = req.params;
-  const formData = req.body;
+const DeleteCurso = async (req, res) => {
+  const regData = req.body;
+  const token = req.session.token;
 
   try {
-    await axios.put(`${process.env.SERVIDOR_SIADBack}/courses/${id}`, formData, {
-      headers: { "Content-Type": "application/json" },
+    const response = await axios.post(process.env.SERVIDOR_DW3Back + "/DeleteCursos", regData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      timeout: 5000, // 5 segundos de timeout
     });
 
-    res.json({ status: "ok", msg: "Curso atualizado com sucesso!" });
+    res.json({
+      status: response.data.status,
+      msg: response.data.msg,
+      data: response.data,
+      erro: null,
+    });
   } catch (error) {
-    res.status(400).json({ status: "error", msg: "Erro ao atualizar curso" });
-  }
-};
-
-const deleteCurso = async (req, res) => {
-  const { id } = req.body;
-
-  try {
-    await axios.delete(`${process.env.SERVIDOR_SIADBack}/courses/${id}`);
-    res.json({ status: "ok", msg: "Curso deletado com sucesso!" });
-  } catch (error) {
-    res.status(400).json({ status: "error", msg: "Erro ao deletar curso" });
+    console.error('[ctlCursos.js|DeleteCurso] Erro ao deletar dados de cursos no servidor backend:', error.message);
+    res.json({
+      status: "Error",
+      msg: error.message,
+      data: null,
+      erro: null,
+    });
   }
 };
 
 module.exports = {
-  ManutCursos,
+  manutCursos,
   insertCursos,
-  viewCurso,
-  updateCurso,
-  deleteCurso,
+  ViewCursos,
+  UpdateCurso,
+  DeleteCurso
 };
